@@ -1,0 +1,6 @@
+Changes 	for the revision history
+Jam.pm  	Jam a large number of cookies to a small
+Makefile.PL	writes the Makefile
+MANIFEST	(this file)
+README  	for the short descriptions about install
+t/1.t   	test script for the CGI::Cookie::Jam
