@@ -1,4 +1,4 @@
-CGI/Cookie/Jam version 0.01
+CGI/Cookie/Jam version 0.02
 ===========================
 
  This module is used to jam a large number of cookies to a small.
@@ -22,7 +22,7 @@ DEPENDENCIES
 
 COPYRIGHT AND LICENCE
 
- Copyright (c) 2003 Masanori HATA. All rights reserved.
+ Copyright (c) 2003-2005 Masanori HATA. All rights reserved.
 
  This library is free software; you can redistribute it and/or
  modify it under the same terms as Perl itself.

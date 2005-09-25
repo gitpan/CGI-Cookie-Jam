@@ -1,5 +1,8 @@
 Revision history for Perl extension CGI::Cookie::Jam.
 
+0.02  2005-09-25 16:42:00 JST
+	- add dejam function
+
 0.01  2003-04-10 11:07:02 JST
 	- first release
 

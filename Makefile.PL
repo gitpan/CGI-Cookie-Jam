@@ -5,10 +5,10 @@ WriteMakefile(
 	'NAME'         => 'CGI::Cookie::Jam',
 	'VERSION_FROM' => 'Jam.pm',
 	'PREREQ_PM'    => {
-		'Exporter' => '5.566',
+		'Exporter' => '5.58',
 	},
 	($] >= 5.005 ? (
 		'ABSTRACT' => 'Jam a large number of cookies to a small',
-		'AUTHOR'   => 'Masanori HATA <lovewing@geocities.co.jp>',
+		'AUTHOR'   => 'Masanori HATA <lovewing@dream.big.or.jp>',
 	) : ()),
 );
