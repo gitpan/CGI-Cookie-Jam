@@ -1,5 +1,9 @@
 Revision history for Perl extension CGI::Cookie::Jam.
 
+0.05  2005-09-27 16:12:34 JST
+ - modify enjam_crypt() and dejam_crypt() functions to crypt
+   not for the name but only for the value of cookie string.
+
 0.04  2005-09-27 15:33:56 JST
  - add enjam_crypt() and dejam_crypt() functions.
 

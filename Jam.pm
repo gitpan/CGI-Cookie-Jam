@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = '0.04'; # 2005-09-27 (since 2003-04-09)
+our $VERSION = '0.05'; # 2005-09-27 (since 2003-04-09)
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -182,10 +182,7 @@ sub enjam_crypt ($;$) {
     
     my($name, $value) = split /=/, $cookie;
     
-    $name  = rotate($name , $magic);
     $value = rotate($value, $magic);
-    
-    $name  = uri_escape($name );
     $value = uri_escape($value);
     
     $cookie = "$name=$value";
@@ -202,10 +199,7 @@ sub dejam_crypt ($;$) {
     
     my($name, $value) = split /=/, $cookie;
     
-    $name  = uri_unescape($name );
     $value = uri_unescape($value);
-    
-    $name  = rotate($name , 7 - $magic);
     $value = rotate($value, 7 - $magic);
     
     $cookie = "$name=$value";
