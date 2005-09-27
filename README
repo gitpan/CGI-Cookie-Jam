@@ -1,7 +1,7 @@
-CGI/Cookie/Jam version 0.02
+CGI/Cookie/Jam version 0.03
 ===========================
 
- This module is used to jam a large number of cookies to a small.
+ This module is used to jam a large number of cookies to a small one.
 
 INSTALLATION
 
@@ -14,7 +14,7 @@ INSTALLATION
 
 DEPENDENCIES
 
- This module requires perl5.8 or later.
+ This module requires perl 5.8 or later.
  And,
  this module requires these other modules and libraries:
 

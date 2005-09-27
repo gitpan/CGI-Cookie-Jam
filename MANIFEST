@@ -1,7 +1,7 @@
-Changes 	for the revision history
-Jam.pm  	Jam a large number of cookies to a small
-Makefile.PL	writes the Makefile
-MANIFEST	(this file)
-README  	for the short descriptions about install
-t/Jam.t   	test script for the CGI::Cookie::Jam
+Changes     for revision history
+Jam.pm      Jam a large number of cookies to a small one
+Makefile.PL write Makefile
+MANIFEST    (this file)
+README      for short descriptions about installation
+t/Jam.t     test script for CGI::Cookie::Jam
 META.yml                                 Module meta-data (added by MakeMaker)

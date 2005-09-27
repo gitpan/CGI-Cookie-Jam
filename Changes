@@ -1,10 +1,14 @@
 Revision history for Perl extension CGI::Cookie::Jam.
 
+0.03  2005-09-27 12:30:00 JST
+ - change enjam() as an object method to just as a function.
+ - discard the constructer class method new().
+
 0.02  2005-09-25 16:42:00 JST
-	- add dejam function
+ - add dejam function
 
 0.01  2003-04-10 11:07:02 JST
-	- first release
+ - first release
 
 0.00  2003-04-09
-	- initial version
+ - initial version
