@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = '0.03'; # 2005-09-27 (since 2003-04-09)
+our $VERSION = '0.04'; # 2005-09-27 (since 2003-04-09)
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -13,6 +13,7 @@ our @EXPORT = qw(
     enjam dejam
 );
 our @EXPORT_OK = qw(
+    enjam_crypt dejam_crypt
     uri_encode uri_decode
     uri_escape uri_unescape
     datetime_cookie
@@ -140,8 +141,6 @@ This function dejams an enjammed cookie string. It returns C<NAME> and C<VALUE> 
 
 Note that this method does not care multi-spanning enjammed cookies.
 
-=back
-
 =cut
 
 sub dejam ($) {
@@ -154,6 +153,87 @@ sub dejam ($) {
     $cookie =~ s/%25/%/g;
     
     return uri_decode($cookie);
+}
+
+=item enjam_crypt( $cookie_string [, $magic] )
+
+=item dejam_crypt( $cookie_string [, $magic] )
+
+These importable functions (you must import these functions to use) are used to encrypt/decrypt a cookie string (C<NAME> and C<VALUE> pair). Magic number should be an integer number from 1 to 6. If it is omitted or invalid one, the default number 4 will be used. To decrypt an encrypted cookie string, you must use the same magic number for the string.
+
+These functions are not independently usable with enjam() or dejam() function. Below is a sample code:
+
+ $jam = enjam('jam', 0, %hash1);   # enjam
+ $encrypt = enjam_crypt($jam);     # encrypt
+ 
+ $decrypt = dejam_crypt($encrypt); # decrypt
+ %hash2 = dejam($crypt);           # dejam (%hash2 is equal to %hash1)
+
+=back
+
+=cut
+
+sub enjam_crypt ($;$) {
+    my($cookie, $magic) = @_;
+    if (not $magic or $magic < 1 or $magic > 6) {
+        $magic = 4;
+    }
+    $magic = int($magic);
+    
+    my($name, $value) = split /=/, $cookie;
+    
+    $name  = rotate($name , $magic);
+    $value = rotate($value, $magic);
+    
+    $name  = uri_escape($name );
+    $value = uri_escape($value);
+    
+    $cookie = "$name=$value";
+    
+    return $cookie;
+}
+
+sub dejam_crypt ($;$) {
+    my($cookie, $magic) = @_;
+    if (not $magic or $magic < 1 or $magic > 6) {
+        $magic = 4;
+    }
+    $magic = int($magic);
+    
+    my($name, $value) = split /=/, $cookie;
+    
+    $name  = uri_unescape($name );
+    $value = uri_unescape($value);
+    
+    $name  = rotate($name , 7 - $magic);
+    $value = rotate($value, 7 - $magic);
+    
+    $cookie = "$name=$value";
+    
+    return $cookie;
+}
+
+sub rotate ($$) {
+    my($str, $magic) = @_;
+    
+    my @str;
+    while ($str) {
+        my $char = chop($str);
+        $char = unpack('B*', $char); # binary code
+        $char = substr($char, 1, 7); # 8bit -> 7bit
+        
+        # rotate to the left
+        my $left  = substr($char, $magic, 7 - $magic);
+        my $right = substr($char, 0, $magic);
+        $char = $left . $right;
+        
+        $char = '0' . $char; # 7bit -> 8bit
+        $char = pack('B*', $char); # ascii code
+        
+        unshift @str, $char;
+    }
+    
+    return join '', @str;
 }
 
 sub uri_encode (@) {
