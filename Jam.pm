@@ -5,15 +5,16 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = '0.05'; # 2005-09-27 (since 2003-04-09)
+our $VERSION = '0.06'; # 2005-09-28 (since 2003-04-09)
 
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
     enjam dejam
+    encryptjam decryptjam
 );
 our @EXPORT_OK = qw(
-    enjam_crypt dejam_crypt
+    rotate
     uri_encode uri_decode
     uri_escape uri_unescape
     datetime_cookie
@@ -41,13 +42,13 @@ CGI::Cookie::Jam - Jam a large number of cookies to a small one.
      role    => 'president'               ,
      hobby   => 'exaggeration'            ,
      );
- my @cookie = enjam('cookie_jammed', '4096', %param1);
+ my @cookie = enjam('jam', '4096', %param1);
  
  my %param2 = dejam($ENV{'HTTP_COOKIE'});
 
 =head1 DESCRIPTION
 
-This module provides jamming method about WWW cookie. Cookie is convenient but there are some limitations on number of cookies that a client can store at a time: 
+This module provides jamming mean to WWW cookie. Cookie is convenient but there are some limitations on number of cookies that a client can store at a time: 
 
  300 total cookies
  4KB per cookie, where the NAME and the VALUE combine to form the 4KB limit.
@@ -59,7 +60,7 @@ Especially, 20 cookies limitation could be a bottle neck. So this module try to 
 
 =over
 
-=item enjam($cookie_name, $maximum_size, %hash)
+=item enjam($cookie_name, $maximum_size, %param)
 
 This function jams a lot number of multiple C<NAME=VALUE> strings for C<Set-Cookie:> HTTP header to a minimum number of C<NAME=VALUE> strings for C<Set-Cookie:> HTTP header. It returns a list of multiple enjammed strings.
 
@@ -87,9 +88,9 @@ This module implements above the function as dejam() method except for the first
 =cut
 
 sub enjam ($$%) {
-    my($cookie, $size, @attr) = @_;
+    my($cookie_name, $size, @attr) = @_;
     
-    $cookie = uri_escape($cookie);
+    $cookie_name = uri_escape($cookie_name);
     
     my @pair;
     for (my $i = 0; $i < $#attr; $i += 2) {
@@ -103,39 +104,45 @@ sub enjam ($$%) {
     my $jam = join('%26', @pair);
     
     if ($size) {
-        my $limit = $size - length($cookie) - 4; # 4 = length("_00=")
-        
-        my @jam;
-        while ($jam) {
-            my $part;
-            if ( length($jam) >= $limit) {
-                $part = substr($jam, 0, $limit);
-                $jam = substr($jam, $limit);
-            }
-            else {
-                $part = $jam;
-                $jam = '';
-            }
-            push @jam, $part;
-        }
-        
-        if ($#jam > 99) {
-            croak "Too many amount of data to store for cookie. This module can handle upto 100 (enjamed) cookies. (The Netscape's regulation is upto 30 cookies.)";
-        }
-        
-        for (my $i = 0; $i <= $#jam; $i++ ) {
-            my $serial = sprintf('%02d', $i);
-            $jam[$i] = $cookie . "_$serial=$jam[$i]";
-        }
-        
-        return @jam;
+        return _jam_cutter($cookie_name, $jam, $size);
     }
     else {
-        return "$cookie=$jam";
+        return "$cookie_name=$jam";
     }
 }
 
-=item dejam($cookie_string)
+sub _jam_cutter {
+    my($cookie_name, $jam, $size) = @_;
+    
+    my $limit = $size - length($cookie_name) - 4; # 4 = length("_00=")
+    
+    my @jam;
+    while ($jam) {
+        my $part;
+        if ( length($jam) >= $limit) {
+            $part = substr($jam, 0, $limit);
+            $jam = substr($jam, $limit);
+        }
+        else {
+            $part = $jam;
+            $jam = '';
+        }
+        push @jam, $part;
+    }
+    
+    if ($#jam > 99) {
+        croak "Too many amount of data to store for cookie. This module can handle upto 100 (enjamed) cookies. (The Netscape's regulation is upto 30 cookies.)";
+    }
+    
+    for (my $i = 0; $i <= $#jam; $i++ ) {
+        my $serial = sprintf('%02d', $i);
+        $jam[$i] = $cookie_name . "_$serial=$jam[$i]";
+    }
+    
+    return @jam;
+}
+
+=item dejam($jam_string)
 
 This function dejams an enjammed cookie string. It returns C<NAME> and C<VALUE> pairs as a list. You may use those dejammed data to put into an hash.
 
@@ -144,67 +151,79 @@ Note that this method does not care multi-spanning enjammed cookies.
 =cut
 
 sub dejam ($) {
-    my $cookie = shift;
+    my $jam = shift;
     
-    $cookie =~ s/^.*?=//;
+    $jam =~ s/^.*?=//;
     
-    $cookie =~ s/%3D/=/g;
-    $cookie =~ s/%26/&/g;
-    $cookie =~ s/%25/%/g;
+    $jam =~ s/%3D/=/g;
+    $jam =~ s/%26/&/g;
+    $jam =~ s/%25/%/g;
     
-    return uri_decode($cookie);
+    return uri_decode($jam);
 }
 
-=item enjam_crypt( $cookie_string [, $magic] )
+=item encryptjam($cookie_name, $maximum_size, $magic_number, %param)
 
-=item dejam_crypt( $cookie_string [, $magic] )
+=item decryptjam($cryptjam_string, $magic_number)
 
-These importable functions (you must import these functions to use) are used to encrypt/decrypt a cookie string (C<NAME> and C<VALUE> pair). Magic number should be an integer number from 1 to 6. If it is omitted or invalid one, the default number 4 will be used. To decrypt an encrypted cookie string, you must use the same magic number for the string.
+These functions are used to handle an encrypted/decrypted cookie jam. Magic number will be used as a seed of encrypting. To decrypt an encrypted jam, you must use the same magic number for the string.
 
-These functions are not independently usable with enjam() or dejam() function. Below is a sample code:
-
- $jam = enjam('jam', 0, %hash1);   # enjam
- $encrypt = enjam_crypt($jam);     # encrypt
- 
- $decrypt = dejam_crypt($encrypt); # decrypt
- %hash2 = dejam($crypt);           # dejam (%hash2 is equal to %hash1)
+These are alternatives for enjam() and dejam() functions.
 
 =back
 
 =cut
 
-sub enjam_crypt ($;$) {
-    my($cookie, $magic) = @_;
-    if (not $magic or $magic < 1 or $magic > 6) {
-        $magic = 4;
+sub encryptjam ($$$%) {
+    my($cookie_name, $size, $magic, @attr) = @_;
+    $magic = _magic_normalize($magic);
+    
+    $cookie_name = uri_escape($cookie_name);
+    
+    my @pair;
+    for (my $i = 0; $i < $#attr; $i += 2) {
+        my($name, $value) = ($attr[$i], $attr[$i + 1]);
+        $name  = uri_escape($name );
+        $value = uri_escape($value);
+        push @pair, "$name=$value";
     }
-    $magic = int($magic);
+    my $jam = join('&', @pair);
     
-    my($name, $value) = split /=/, $cookie;
+    my $cryptjam = rotate($jam, $magic);
+    $cryptjam = uri_escape($cryptjam);
     
-    $value = rotate($value, $magic);
-    $value = uri_escape($value);
-    
-    $cookie = "$name=$value";
-    
-    return $cookie;
+    if ($size) {
+        return _jam_cutter($cookie_name, $cryptjam, $size);
+    }
+    else {
+        return "$cookie_name=$cryptjam";
+    }
 }
 
-sub dejam_crypt ($;$) {
-    my($cookie, $magic) = @_;
-    if (not $magic or $magic < 1 or $magic > 6) {
-        $magic = 4;
+sub decryptjam ($$) {
+    my($cryptjam, $magic) = @_;
+    $magic = _magic_normalize($magic);
+    
+    $cryptjam =~ s/^.*?=//;
+    $cryptjam = uri_unescape($cryptjam);
+    
+    my $jam = rotate($cryptjam, 7 - $magic);
+    
+    return uri_decode($jam);
+}
+
+sub _magic_normalize {
+    my $magic = shift;
+    my $mode = int($magic) % 7;
+    
+    if ($mode == 0) {
+        $mode = (int($magic) / 7) % 7;
+        if ($mode == 0) {
+            $mode = 1;
+        }
     }
-    $magic = int($magic);
     
-    my($name, $value) = split /=/, $cookie;
-    
-    $value = uri_unescape($value);
-    $value = rotate($value, 7 - $magic);
-    
-    $cookie = "$name=$value";
-    
-    return $cookie;
+    return $mode;
 }
 
 sub rotate ($$) {
