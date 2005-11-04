@@ -5,10 +5,10 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = '0.06'; # 2005-09-28 (since 2003-04-09)
+our $VERSION = '0.07'; # 2005-11-04 (since 2003-04-09)
 
 require Exporter;
-our @ISA = qw(Exporter);
+our @ISA = 'Exporter';
 our @EXPORT = qw(
     enjam dejam
     encryptjam decryptjam
@@ -280,7 +280,7 @@ sub uri_decode ($) {
 }
 
 sub uri_escape ($) {
-    my $string = shift;
+    utf8::encode(my $string = shift);
     my %escaped;
     foreach my $i (0 .. 255) {
         $escaped{chr($i)} = sprintf('%%%02X', $i);
@@ -302,6 +302,8 @@ sub uri_unescape ($) {
         $unescaped{ sprintf('%02x', $i) } = chr($i); # for %hh
     }
     $string =~ s/%([0-9A-Fa-f]{2})/$unescaped{$1}/g;
+    
+    utf8::decode($string);
     return $string;
 }
 
