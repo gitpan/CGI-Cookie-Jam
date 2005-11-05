@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = '0.07'; # 2005-11-04 (since 2003-04-09)
+our $VERSION = '0.08'; # 2005-11-05 (since 2003-04-09)
 
 require Exporter;
 our @ISA = 'Exporter';
@@ -281,26 +281,34 @@ sub uri_decode ($) {
 
 sub uri_escape ($) {
     utf8::encode(my $string = shift);
-    my %escaped;
-    foreach my $i (0 .. 255) {
-        $escaped{chr($i)} = sprintf('%%%02X', $i);
+    
+    # build conversion map
+    my %hexhex;
+    for (my $i = 0; $i <= 255; $i++) {
+        $hexhex{chr($i)} = sprintf('%02X', $i);
     }
-    # my $reserved = ';/?:@&=+$,[]'; # "[" and "]" have added in RFC2732
-    # my $alphanum = '0-9A-Za-z';
-    # my $mark = q/-_.!~*'()/;
-    # my $unreserved = $alphanum . $mark;
-    my $unreserved = q/0-9A-Za-z-_.!~*'()/;
-    $string =~ s/([^$unreserved])/$escaped{$1}/og;
+    
+    # my $Reserved = ';/?:@&=+$,[]'; # "[" and "]" have been added in the RFC 2732
+    # my $Alphanum = '0-9A-Za-z';
+    # my $Mark = q/-_.!~*'()/;
+    # my $Unreserved = $Alphanum . $Mark;
+    my $Unreserved = q/0-9A-Za-z\-_.!~*'()/;
+    
+    $string =~ s/([^$Unreserved])/%$hexhex{$1}/og;
+    
     return $string;
 }
 
 sub uri_unescape ($) {
     my $string = shift;
+    
+    # build conversion map
     my %unescaped;
-    foreach my $i (0 .. 255) {
+    for (my $i = 0; $i <= 255; $i++) {
         $unescaped{ sprintf('%02X', $i) } = chr($i); # for %HH
         $unescaped{ sprintf('%02x', $i) } = chr($i); # for %hh
     }
+    
     $string =~ s/%([0-9A-Fa-f]{2})/$unescaped{$1}/g;
     
     utf8::decode($string);
