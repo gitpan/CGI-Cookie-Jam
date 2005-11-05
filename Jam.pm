@@ -1,24 +1,33 @@
 package CGI::Cookie::Jam;
+########################################################################
+# Copyright (c) 2003-2005 Masanori HATA. All rights reserved.
+# <http://go.to/hata>
+########################################################################
 
+#### Pragmas ###########################################################
 use 5.008;
 use strict;
 use warnings;
-use Carp;
-
-our $VERSION = '0.08'; # 2005-11-05 (since 2003-04-09)
-
+#### Standard Libraries ################################################
 require Exporter;
 our @ISA = 'Exporter';
-our @EXPORT = qw(
+our @EXPORT_OK = qw(
     enjam dejam
     encryptjam decryptjam
-);
-our @EXPORT_OK = qw(
     rotate
-    uri_encode uri_decode
-    uri_escape uri_unescape
     datetime_cookie
 );
+
+use Carp;
+########################################################################
+
+#### Module Dependencies ###############################################
+use CGI::Uricode qw(uri_decode uri_escape uri_unescape);
+########################################################################
+
+#### Constants #########################################################
+our $VERSION = '0.09'; # 2005-11-05 (since 2003-04-09)
+########################################################################
 
 =head1 NAME
 
@@ -26,7 +35,7 @@ CGI::Cookie::Jam - Jam a large number of cookies to a small one.
 
 =head1 SYNOPSIS
 
- use CGI::Cookie::Jam;
+ use CGI::Cookie::Jam qw(enjam dejam);
  
  my %param1(
      name    => 'Masanori HATA'           ,
@@ -62,7 +71,7 @@ Especially, 20 cookies limitation could be a bottle neck. So this module try to 
 
 =item enjam($cookie_name, $maximum_size, %param)
 
-This function jams a lot number of multiple C<NAME=VALUE> strings for C<Set-Cookie:> HTTP header to a minimum number of C<NAME=VALUE> strings for C<Set-Cookie:> HTTP header. It returns a list of multiple enjammed strings.
+Exportable function. This function jams a lot number of multiple C<NAME=VALUE> strings for C<Set-Cookie:> HTTP header to a minimum number of C<NAME=VALUE> strings for C<Set-Cookie:> HTTP header. It returns a list of multiple enjammed strings.
 
 The enjamming algorithm is realized by twice uri-escaping. At first, each cookie's C<NAME> and C<VALUE> pairs are uri-escaped and joined with C<=> (an equal mark). Then, multiple C<NAME=VALUE> pairs are joined with C<&> (an ampersand mark). This procedure is very the uri-encoding (see L<http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.1>).
 
@@ -72,7 +81,7 @@ Still a cookie has only one C<NAME=VALUE> pair, the uri-encoded string must be r
  '&' is converted to '%26'
  '%' is converted to '%25'
 
-At last, this module uses the jam's C<$cookie_name> (which is, of course, uri-escaped, and coupled with a serial number like C<$cookie_name_XX>) as cookie C<NAME> and uses the twice uri_escaped string as cookie C<VALUE>, then join both with C<=> to make a C<NAME=VALUE> string. The final product is very the enjammed multi-spanning cookies.
+At last, this module uses the jam's C<$cookie_name> (which is, of course, uri-escaped, and coupled with a serial number like C<$cookie_name_XX>) as cookie C<NAME> and uses the twice uri-escaped string as cookie C<VALUE>, then join both with C<=> to make a C<NAME=VALUE> string. The final product is very the enjammed multi-spanning cookies.
 
 With C<size> attribute you can specify the size (bytes) of a cookie (that is the size of C<NAME=VALUE> string). Generally, to set C<4096> bytes (4KB) is recommended. If you set C<0> byte, no size limitation will work and only one cookie will be generated without filename numbering (C<_XX>).
 
@@ -90,13 +99,13 @@ This module implements above the function as dejam() method except for the first
 sub enjam ($$%) {
     my($cookie_name, $size, @attr) = @_;
     
-    $cookie_name = uri_escape($cookie_name);
+    uri_escape($cookie_name);
     
     my @pair;
     for (my $i = 0; $i < $#attr; $i += 2) {
         my($name, $value) = ($attr[$i], $attr[$i + 1]);
-        $name  = uri_escape($name );
-        $value = uri_escape($value);
+        uri_escape($name );
+        uri_escape($value);
         $name  =~ s/%/%25/g;
         $value =~ s/%/%25/g;
         push @pair, "$name%3D$value";
@@ -144,7 +153,7 @@ sub _jam_cutter {
 
 =item dejam($jam_string)
 
-This function dejams an enjammed cookie string. It returns C<NAME> and C<VALUE> pairs as a list. You may use those dejammed data to put into an hash.
+Exportable function. This function dejams an enjammed cookie string. It returns C<NAME> and C<VALUE> pairs as a list. You may use those dejammed data to put into an hash.
 
 Note that this method does not care multi-spanning enjammed cookies.
 
@@ -164,9 +173,9 @@ sub dejam ($) {
 
 =item encryptjam($cookie_name, $maximum_size, $magic_number, %param)
 
-=item decryptjam($cryptjam_string, $magic_number)
+=item decryptjam($magic_number, $cryptjam_string)
 
-These functions are used to handle an encrypted/decrypted cookie jam. Magic number will be used as a seed of encrypting. To decrypt an encrypted jam, you must use the same magic number for the string.
+Exportable functions. These functions are used to handle an encrypted/decrypted cookie jam. Magic number will be used as a seed of encrypting. To decrypt an encrypted jam, you must use the same magic number for the string.
 
 These are alternatives for enjam() and dejam() functions.
 
@@ -176,43 +185,43 @@ These are alternatives for enjam() and dejam() functions.
 
 sub encryptjam ($$$%) {
     my($cookie_name, $size, $magic, @attr) = @_;
-    $magic = _magic_normalize($magic);
+    _magic_normalize($magic);
     
-    $cookie_name = uri_escape($cookie_name);
+    uri_escape($cookie_name);
     
     my @pair;
     for (my $i = 0; $i < $#attr; $i += 2) {
         my($name, $value) = ($attr[$i], $attr[$i + 1]);
-        $name  = uri_escape($name );
-        $value = uri_escape($value);
+        uri_escape($name );
+        uri_escape($value);
         push @pair, "$name=$value";
     }
     my $jam = join('&', @pair);
     
-    my $cryptjam = rotate($jam, $magic);
-    $cryptjam = uri_escape($cryptjam);
+    rotate($magic, $jam);
+    uri_escape($jam);
     
     if ($size) {
-        return _jam_cutter($cookie_name, $cryptjam, $size);
+        return _jam_cutter($cookie_name, $jam, $size);
     }
     else {
-        return "$cookie_name=$cryptjam";
+        return "$cookie_name=$jam";
     }
 }
 
 sub decryptjam ($$) {
-    my($cryptjam, $magic) = @_;
-    $magic = _magic_normalize($magic);
+    my($magic, $jam) = @_;
+    _magic_normalize($magic);
     
-    $cryptjam =~ s/^.*?=//;
-    $cryptjam = uri_unescape($cryptjam);
+    $jam =~ s/^.*?=//;
+    uri_unescape($jam);
     
-    my $jam = rotate($cryptjam, 7 - $magic);
+    rotate(7 - $magic, $jam);
     
     return uri_decode($jam);
 }
 
-sub _magic_normalize {
+sub _magic_normalize ($) {
     my $magic = shift;
     my $mode = int($magic) % 7;
     
@@ -223,11 +232,11 @@ sub _magic_normalize {
         }
     }
     
-    return $mode;
+    return $_[0] = $mode;
 }
 
 sub rotate ($$) {
-    my($str, $magic) = @_;
+    my($magic, $str) = @_;
     
     my @str;
     while ($str) {
@@ -246,73 +255,7 @@ sub rotate ($$) {
         unshift @str, $char;
     }
     
-    return join '', @str;
-}
-
-sub uri_encode (@) {
-    my @attr = @_;
-    
-    my @pair;
-    for (my $i = 0; $i < $#attr; $i += 2) {
-        my($name, $value) = ($attr[$i], $attr[$i + 1]);
-        $name  = uri_escape($name);
-        $value = uri_escape($value);
-        push @pair, "$name=$value";
-    }
-    
-    return join('&', @pair);
-}
-
-sub uri_decode ($) {
-    my $encoded = shift;
-    
-    my @string = split('&', $encoded);
-    my @decoded;
-    foreach my $string (@string) {
-        $string =~ tr/+/ /;
-        my($name, $value) = split('=', $string);
-        $name  = uri_unescape($name );
-        $value = uri_unescape($value);
-        push(@decoded, $name, $value);
-    }
-    
-    return @decoded;
-}
-
-sub uri_escape ($) {
-    utf8::encode(my $string = shift);
-    
-    # build conversion map
-    my %hexhex;
-    for (my $i = 0; $i <= 255; $i++) {
-        $hexhex{chr($i)} = sprintf('%02X', $i);
-    }
-    
-    # my $Reserved = ';/?:@&=+$,[]'; # "[" and "]" have been added in the RFC 2732
-    # my $Alphanum = '0-9A-Za-z';
-    # my $Mark = q/-_.!~*'()/;
-    # my $Unreserved = $Alphanum . $Mark;
-    my $Unreserved = q/0-9A-Za-z\-_.!~*'()/;
-    
-    $string =~ s/([^$Unreserved])/%$hexhex{$1}/og;
-    
-    return $string;
-}
-
-sub uri_unescape ($) {
-    my $string = shift;
-    
-    # build conversion map
-    my %unescaped;
-    for (my $i = 0; $i <= 255; $i++) {
-        $unescaped{ sprintf('%02X', $i) } = chr($i); # for %HH
-        $unescaped{ sprintf('%02x', $i) } = chr($i); # for %hh
-    }
-    
-    $string =~ s/%([0-9A-Fa-f]{2})/$unescaped{$1}/g;
-    
-    utf8::decode($string);
-    return $string;
+    return $_[1] = join '', @str;
 }
 
 sub datetime_cookie ($) {
@@ -346,7 +289,7 @@ __END__
 
 =head1 AUTHOR
 
-Masanori HATA E<lt>lovewing@dream.big.or.jpE<gt> (Saitama, JAPAN)
+Masanori HATA L<http://go.to/hata> (Saitama, JAPAN)
 
 =head1 COPYRIGHT
 

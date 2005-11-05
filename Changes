@@ -1,5 +1,13 @@
 Revision history for Perl extension CGI::Cookie::Jam.
 
+0.09  2005-11-05 19:13:10 JST
+ - change implementation about uri_encode(), uri_decode(), uri_escape()
+   and uri_unescape(). these functions are removed from the module and
+   use them by using the external module CGI::Uricode.
+ - change usage of decryptjam().
+ - now all functions are changed to be exportable functions.
+   no functions are exported by default.
+
 0.08  2005-11-05 10:49:43 JST
  - minor modifications with algorythm of uri_escape() and
    uri_unescape().

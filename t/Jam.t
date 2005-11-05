@@ -35,7 +35,7 @@ my @param = (
     text   => $text
     );
 
-my @got = enjam('jammed_cookies', 4096, @param);
+my @got = CGI::Cookie::Jam::enjam('jammed_cookies', 4096, @param);
 
 for (my $i = 0; $i <= $#expected; $i++) {
     my $message = 'function enjam(%param) ' . ($i + 1) . '/' . ($#expected + 1);
@@ -43,22 +43,22 @@ for (my $i = 0; $i <= $#expected; $i++) {
 }
 
 ########################################################################
-# function enjam(%param) without size limitation
+# function enjam(%param) w/o size limitation
 
 $expected =~ s/\n//g;
 $expected =~ s/jammed_cookies_\d\d=//g;
 $expected = 'jammed_cookie=' . $expected;
 
-my $got = enjam('jammed_cookie', 0, @param);
+my $got = CGI::Cookie::Jam::enjam('jammed_cookie', 0, @param);
 
-is($got, $expected, 'function enjam(%param) without size limitation');
+is($got, $expected, 'function enjam(%param) w/o size limitation');
 
 ########################################################################
 # function dejam($cookie)
 
 my %expected = @param;
 
-my %param = dejam $expected;
+my %param = CGI::Cookie::Jam::dejam $expected;
 
 my $i = 0;
 foreach my $name (keys %expected) {
@@ -71,7 +71,7 @@ foreach my $name (keys %expected) {
 
 chomp(my $expected_crypt = $text[2]);
 
-my $cryptjam = encryptjam('cryptjam', 0, 4, @param);
+my $cryptjam = CGI::Cookie::Jam::encryptjam('cryptjam', 0, 4, @param);
 
 is($cryptjam, $expected_crypt, 'function encryptjam()');
 
@@ -79,7 +79,7 @@ is($cryptjam, $expected_crypt, 'function encryptjam()');
 # function decryptjam()
 
 %param = ();
-%param = decryptjam($expected_crypt, 4);
+%param = CGI::Cookie::Jam::decryptjam(4, $expected_crypt);
 
 $i = 0;
 foreach my $name (keys %expected) {
@@ -88,7 +88,7 @@ foreach my $name (keys %expected) {
 }
 
 ########################################################################
-# function enjam(%param) with Japanse Kanji characters
+# function enjam(%param) w/ Japanse Kanji characters
 
 $expected = $text[3];
 @expected = split /\n/, $expected;
@@ -109,23 +109,23 @@ $expected = $text[3];
     文章   => $text
 );
 
-@got = enjam('漢字クッキー', 4096, @param);
+@got = CGI::Cookie::Jam::enjam('漢字クッキー', 4096, @param);
 
 for (my $i = 0; $i <= $#expected; $i++) {
-    my $message = 'function enjam(%param) with Kanji ' . ($i + 1) . '/' . ($#expected + 1);
+    my $message = 'function enjam(%param) w/ Kanji ' . ($i + 1) . '/' . ($#expected + 1);
     is($got[$i], $expected[$i], $message);
 }
 
 ########################################################################
-# function enjam(%param) without size limitation
+# function enjam(%param) w/o size limitation
 
 $expected =~ s/\n//g;
 $expected =~ s/%E6%BC%A2%E5%AD%97%E3%82%AF%E3%83%83%E3%82%AD%E3%83%BC_\d\d=//g;
 $expected = '%E6%BC%A2%E5%AD%97%E3%82%AF%E3%83%83%E3%82%AD%E3%83%BC=' . $expected;
 
-$got = enjam('漢字クッキー', 0, @param);
+$got = CGI::Cookie::Jam::enjam('漢字クッキー', 0, @param);
 
-is($got, $expected, 'function enjam(%param) without size limitation with Kanji');
+is($got, $expected, 'function enjam(%param) w/o size limitation w/ Kanji');
 
 ########################################################################
 # function dejam($cookie)
@@ -134,11 +134,11 @@ is($got, $expected, 'function enjam(%param) without size limitation with Kanji')
 %expected = @param;
 
 %param = ();
-%param = dejam $expected;
+%param = CGI::Cookie::Jam::dejam $expected;
 
 $i = 0;
 foreach my $name (keys %expected) {
-    my $message = 'function dejam($cookie) with Kanji ' . ($i++ + 1) . '/' . (($#param + 1) / 2);
+    my $message = 'function dejam($cookie) w/ Kanji ' . ($i++ + 1) . '/' . (($#param + 1) / 2);
     is($param{$name}, $expected{$name}, $message);
 }
 
@@ -147,19 +147,19 @@ foreach my $name (keys %expected) {
 
 chomp($expected_crypt = $text[4]);
 
-$cryptjam = encryptjam('暗号化クッキー', 0, 4, @param);
+$cryptjam = CGI::Cookie::Jam::encryptjam('暗号化クッキー', 0, 4, @param);
 
-is($cryptjam, $expected_crypt, 'function encryptjam() with Kanji');
+is($cryptjam, $expected_crypt, 'function encryptjam() w/ Kanji');
 
 ########################################################################
 # function decryptjam()
 
 %param = ();
-%param = decryptjam($expected_crypt, 4);
+%param = CGI::Cookie::Jam::decryptjam(4, $expected_crypt);
 
 $i = 0;
 foreach my $name (keys %expected) {
-    my $message = 'function decryptjam() with Kanji ' . ($i++ + 1) . '/' . (($#param + 1) / 2);
+    my $message = 'function decryptjam() w/ Kanji ' . ($i++ + 1) . '/' . (($#param + 1) / 2);
     is($param{$name}, $expected{$name}, $message);
 }
 
